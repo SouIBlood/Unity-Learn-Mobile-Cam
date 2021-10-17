@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using OpenCvSharp;
 
 public class PhoneCamera: MonoBehaviour
 {
@@ -44,7 +45,7 @@ public class PhoneCamera: MonoBehaviour
         }
 
         backCam.Play();
-        background.texture = backCam;
+        // background.texture = backCam;
 
         camAvailable = true;
     }
@@ -57,6 +58,11 @@ public class PhoneCamera: MonoBehaviour
             return;
         }
 
+        GetComponent<Renderer>().material.mainTexture = backCam;
+        Mat frame = OpenCvSharp.Unity.TextureToMat(backCam);
+        
+        
+        FrameToHSV(frame);
         // float ratio = (float)backCam.width / (float)backCam.height;
         // fitter.aspectRatio = ratio;
 
@@ -65,5 +71,14 @@ public class PhoneCamera: MonoBehaviour
 
         // int orient = -backCam.videoRotationAngle;
         // background.rectTransform.localEulerAngles = new Vector3(0, 0, orient);
+    }
+
+    private void FrameToHSV(Mat frame)
+    {
+        Mat greyFrame = new Mat();
+
+        Cv2.CvtColor(frame, greyFrame, ColorConversionCodes.RGB2GRAY);
+
+        background.texture = OpenCvSharp.Unity.MatToTexture(greyFrame);
     }
 }
