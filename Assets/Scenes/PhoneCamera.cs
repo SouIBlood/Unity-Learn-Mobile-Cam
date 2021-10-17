@@ -57,13 +57,13 @@ public class PhoneCamera: MonoBehaviour
             return;
         }
 
-        float ratio = (float)backCam.width / (float)backCam.height;
-        fitter.aspectRatio = ratio;
+        // float ratio = (float)backCam.width / (float)backCam.height;
+        // fitter.aspectRatio = ratio;
 
-        float scaleY = backCam.videoVerticallyMirrored ? -1f: 1f;
-        background.rectTransform.localScale = new Vector3(1f, scaleY, 1f);
+        // float scaleY = backCam.videoVerticallyMirrored ? -1f: 1f;
+        // background.rectTransform.localScale = new Vector3(1f, scaleY, 1f);
 
-        int orient = -backCam.videoRotationAngle;
-        background.rectTransform.localEulerAngles = new Vector3(0, 0, orient);
+        // int orient = -backCam.videoRotationAngle;
+        // background.rectTransform.localEulerAngles = new Vector3(0, 0, orient);
     }
 }
