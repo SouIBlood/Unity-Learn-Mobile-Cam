@@ -1,24 +1,26 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Networking;
 
 public class PhoneCamera: MonoBehaviour
 {
-    private bool camAvailable;
-    private WebCamTexture backCam;
-    private Texture defaultBackground;
-
     public RawImage background;
     public AspectRatioFitter fitter;
 
+    private bool camAvailable;
 
+    private IEnumerator coroutine;
+
+    private WebCamTexture backCam;
     private Texture2D outTexture;
+
 
     // Start is called before the first frame update
     void Start()
     {
-        this.defaultBackground = background.texture;
         WebCamDevice[] devices = WebCamTexture.devices;
 
         if(devices.Length == 0)
@@ -45,9 +47,6 @@ public class PhoneCamera: MonoBehaviour
 
         this.backCam.Play();
 
-        // this.background.texture = this.backCam;
-        
-
         // Apply Camera Ratio to background
         float ratio = (float)backCam.width / (float)backCam.height;
         this.fitter.aspectRatio = ratio;
@@ -59,18 +58,87 @@ public class PhoneCamera: MonoBehaviour
         this.background.rectTransform.localEulerAngles = new Vector3(0, 0, orient);
 
         this.camAvailable = true;
+
+        coroutine = processImage();
+        StartCoroutine(coroutine);
     }
+
+    private IEnumerator processImage()
+    {
+        if(this.camAvailable)
+        {
+            while (true)
+            {
+                Debug.Log("Process Image");
+
+                List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+
+                Color32[] data = new Color32[backCam.width * backCam.height];
+                backCam.GetPixels32(data);
+
+                Debug.Log("Process Image 1");
+
+                formData.Add(new MultipartFormFileSection("image", Color32ArrayToByteArray(data), "image.jpg", "image/jpeg"));
+                Debug.Log("From Data Add");
+
+                UnityWebRequest www = UnityWebRequest.Post("http://192.168.0.135:5000/upload", formData);
+
+                Debug.Log("From Data Post");
+
+                yield return www.SendWebRequest();
+                Debug.Log("Request complete");
+
+                if (www.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.Log("Request Failed " + www.error);
+                }
+                else
+                {
+                    Debug.Log("Success");
+
+                    outTexture = ((DownloadHandlerTexture)www.downloadHandler).texture;
+                    background.texture = outTexture;
+
+                    Debug.Log("OK");
+                }
+                Debug.Log("Wait");
+                yield return new WaitForSeconds(1.0f);
+            }
+        }
+
+
+    }
+
+
+    private static byte[] Color32ArrayToByteArray(Color32[] colors)
+    {
+        if (colors == null || colors.Length == 0)
+            return null;
+
+        int lengthOfColor32 = Marshal.SizeOf(typeof(Color32));
+        int length = lengthOfColor32 * colors.Length;
+        byte[] bytes = new byte[length];
+
+        GCHandle handle = default(GCHandle);
+        try
+        {
+            handle = GCHandle.Alloc(colors, GCHandleType.Pinned);
+            System.IntPtr ptr = handle.AddrOfPinnedObject();
+            Marshal.Copy(ptr, bytes, 0, length);
+        }
+        finally
+        {
+            if (handle != default(GCHandle))
+                handle.Free();
+        }
+
+        return bytes;
+    }
+
 
     // Update is called once per frame
     void Update()
     {
-        if(!this.camAvailable)
-        {
-            return;
-        }
-
-
-
     }
 
 
