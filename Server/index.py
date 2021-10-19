@@ -4,6 +4,8 @@ from flask import Flask
 from flask.globals import request
 from flask.helpers import send_file
 from flask.wrappers import Response
+import time
+
 
 app = Flask(__name__)
 
@@ -11,10 +13,12 @@ app = Flask(__name__)
 def do_upload():
     upload     = request.files.get('image')
     name, ext = os.path.splitext(upload.filename)
+    ts = str(int(time.time()))
 
-    # upload.save('D:\\python\\test.jpeg')
 
-    # upload = open('D:\\python\\test.jpeg', 'rb')
+    upload.save('D:\\python\\'+ts+'.jpeg')
+
+    upload = open('D:\\python\\'+ts+'.jpeg', 'rb')
     
     return Response(
         response = upload.read(),
