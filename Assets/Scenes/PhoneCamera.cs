@@ -15,8 +15,7 @@ public class PhoneCamera: MonoBehaviour
     private IEnumerator coroutine;
 
     private WebCamTexture backCam;
-    private Texture2D outTexture;
-
+    private Texture2D camTexture;
 
     // Start is called before the first frame update
     void Start()
@@ -67,23 +66,30 @@ public class PhoneCamera: MonoBehaviour
     {
         if(this.camAvailable)
         {
+            Debug.Log("Wait 5 seconds");
+            yield return new WaitForSeconds(5.0f);
+
+            this.camTexture = new Texture2D(backCam.width, backCam.height);
+            
             while (true)
             {
                 Debug.Log("Process Image");
 
                 List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
 
-                Color32[] data = new Color32[backCam.width * backCam.height];
-                backCam.GetPixels32(data);
+                this.camTexture.SetPixels32(backCam.GetPixels32());
+                this.camTexture.Apply();
 
                 Debug.Log("Process Image 1");
 
-                formData.Add(new MultipartFormFileSection("image", Color32ArrayToByteArray(data), "image.jpg", "image/jpeg"));
+
+                formData.Add(new MultipartFormFileSection("image", this.camTexture.EncodeToJPG(), "image.jpg", "image/jpeg"));
                 Debug.Log("From Data Add");
 
                 UnityWebRequest www = UnityWebRequest.Post("http://192.168.0.135:5000/upload", formData);
-
+                www.downloadHandler = new DownloadHandlerTexture();
                 Debug.Log("From Data Post");
+
 
                 yield return www.SendWebRequest();
                 Debug.Log("Request complete");
@@ -95,44 +101,21 @@ public class PhoneCamera: MonoBehaviour
                 else
                 {
                     Debug.Log("Success");
-
-                    outTexture = ((DownloadHandlerTexture)www.downloadHandler).texture;
-                    background.texture = outTexture;
+                    background.texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
 
                     Debug.Log("OK");
                 }
+
+                formData.Clear();
+                formData = null;
+                www.Dispose();
+
                 Debug.Log("Wait");
                 yield return new WaitForSeconds(1.0f);
             }
         }
 
 
-    }
-
-
-    private static byte[] Color32ArrayToByteArray(Color32[] colors)
-    {
-        if (colors == null || colors.Length == 0)
-            return null;
-
-        int lengthOfColor32 = Marshal.SizeOf(typeof(Color32));
-        int length = lengthOfColor32 * colors.Length;
-        byte[] bytes = new byte[length];
-
-        GCHandle handle = default(GCHandle);
-        try
-        {
-            handle = GCHandle.Alloc(colors, GCHandleType.Pinned);
-            System.IntPtr ptr = handle.AddrOfPinnedObject();
-            Marshal.Copy(ptr, bytes, 0, length);
-        }
-        finally
-        {
-            if (handle != default(GCHandle))
-                handle.Free();
-        }
-
-        return bytes;
     }
 
 
