@@ -19,6 +19,7 @@ public class PhoneCamera: MonoBehaviour
     List<IMultipartFormSection> formData;
 
     private YieldInstruction oneSecond;
+    private YieldInstruction qSecond;
 
     // Start is called before the first frame update
     void Start()
@@ -72,6 +73,7 @@ public class PhoneCamera: MonoBehaviour
             if(this.oneSecond == null)
             {
                 this.oneSecond = new WaitForSeconds(1.0f);
+                this.qSecond = new WaitForSeconds(0.05f);
             }
 
             yield return this.oneSecond;
@@ -119,7 +121,7 @@ public class PhoneCamera: MonoBehaviour
                 formData.Clear();
                 Debug.Log("Wait 1 second");
 
-                yield return this.oneSecond;
+                yield return this.qSecond;
             }
         }
 
