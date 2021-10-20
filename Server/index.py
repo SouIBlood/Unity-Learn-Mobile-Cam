@@ -16,9 +16,9 @@ def do_upload():
     ts = str(int(time.time()))
 
 
-    upload.save('D:\\python\\'+ts+'.jpeg')
+    # upload.save('D:\\python\\'+ts+'.jpeg')
 
-    upload = open('D:\\python\\'+ts+'.jpeg', 'rb')
+    # upload = open('D:\\python\\'+ts+'.jpeg', 'rb')
     
     return Response(
         response = upload.read(),

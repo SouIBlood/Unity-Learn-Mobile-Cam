@@ -12,10 +12,13 @@ public class PhoneCamera: MonoBehaviour
 
     private bool camAvailable;
 
-    private IEnumerator coroutine;
-
     private WebCamTexture backCam;
+
     private Texture2D camTexture;
+
+    List<IMultipartFormSection> formData;
+
+    private YieldInstruction oneSecond;
 
     // Start is called before the first frame update
     void Start()
@@ -58,41 +61,44 @@ public class PhoneCamera: MonoBehaviour
 
         this.camAvailable = true;
 
-        coroutine = processImage();
-        StartCoroutine(coroutine);
+        StartCoroutine(processImage());
     }
 
     private IEnumerator processImage()
     {
         if(this.camAvailable)
         {
-            Debug.Log("Wait 5 seconds");
-            yield return new WaitForSeconds(5.0f);
+            Debug.Log("Wait 1 seconds");
+            if(this.oneSecond == null)
+            {
+                this.oneSecond = new WaitForSeconds(1.0f);
+            }
 
-            this.camTexture = new Texture2D(backCam.width, backCam.height);
+            yield return this.oneSecond;
+
+            if(this.camTexture == null)
+            {
+                this.camTexture = new Texture2D(backCam.width, backCam.height);
+            }
+            if(this.formData == null)
+            {
+                this.formData = new List<IMultipartFormSection>();
+            }
             
             while (true)
             {
-                Debug.Log("Process Image");
-
-                List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
-
-                this.camTexture.SetPixels32(backCam.GetPixels32());
+                this.camTexture.SetPixels32(this.backCam.GetPixels32());
                 this.camTexture.Apply();
 
-                Debug.Log("Process Image 1");
 
+                this.formData.Add(new MultipartFormFileSection("image", this.camTexture.EncodeToJPG(), "image.jpg", "image/jpeg"));
 
-                formData.Add(new MultipartFormFileSection("image", this.camTexture.EncodeToJPG(), "image.jpg", "image/jpeg"));
-                Debug.Log("From Data Add");
-
-                UnityWebRequest www = UnityWebRequest.Post("http://192.168.0.135:5000/upload", formData);
+                UnityWebRequest www = UnityWebRequest.Post("http://192.168.0.111:5000/upload", this.formData);
                 www.downloadHandler = new DownloadHandlerTexture();
-                Debug.Log("From Data Post");
-
+                Debug.Log("Begin Upload");
 
                 yield return www.SendWebRequest();
-                Debug.Log("Request complete");
+                Debug.Log("Done Post");
 
                 if (www.result != UnityWebRequest.Result.Success)
                 {
@@ -100,18 +106,20 @@ public class PhoneCamera: MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("Success");
-                    background.texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
-
+                    
+                    this.background.texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
                     Debug.Log("OK");
                 }
 
-                formData.Clear();
-                formData = null;
+
+                www.uploadHandler.Dispose();
+                www.downloadHandler.Dispose();
                 www.Dispose();
 
-                Debug.Log("Wait");
-                yield return new WaitForSeconds(1.0f);
+                formData.Clear();
+                Debug.Log("Wait 1 second");
+
+                yield return this.oneSecond;
             }
         }
 
